@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heritage Reviver</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="logo.png">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .comparison-slider {
+            position: relative;
+            overflow: hidden;
+            border-radius: 0.75rem;
+        }
+        #original-img {
+            display: block;
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+            pointer-events: none;
+            max-height: 70vh;
+        }
+        .restored-image-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 50%;
+            overflow: hidden;
+            border-right: 4px solid white;
+            box-sizing: border-box;
+        }
+        #restored-img {
+            display: block;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+            max-width: none;
+        }
+        .slider-handle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background-color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 10;
+            cursor: ew-resize;
+        }
+        .slider-handle svg {
+            width: 24px;
+            height: 24px;
+            color: #3a5a40;
+        }
+        .dragover {
+            transform: scale(1.02);
+            border-color: #3a5a40;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased">
+    <div class="min-h-screen flex flex-col items-center justify-center p-4">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Heritage Reviver</h1>
+            <p class="mt-2 text-lg text-gray-600">Bring the past back to life. Upload a photo to see it restored by AI.</p>
+        </header>
+
+        <main class="w-full max-w-3xl">
+            <!-- Upload Section -->
+            <section id="upload-section" class="bg-white p-6 md:p-8 rounded-xl shadow-lg">
+                <div id="upload-box" class="relative block w-full border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                    <p class="mt-2 block text-sm font-medium text-gray-900">
+                        Drag & Drop your photo here
+                    </p>
+                    <p class="text-xs text-gray-500">or</p>
+                    <button id="browse-btn" type="button" class="mt-2 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#3a5a40] hover:bg-[#588157] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#588157]">
+                        Browse Files
+                    </button>
+                    <input type="file" id="file-input" accept="image/*" class="hidden">
+                </div>
+                 <p class="mt-4 text-center text-xs text-gray-500 bg-gray-100 p-2 rounded-md">
+                    ⚠️ <b>Disclaimer:</b> This is an AI reimagination, not a historically exact reconstruction. For best results, use clear photos of architecture.
+                </p>
+            </section>
+
+            <!-- Processing Section -->
+            <section id="processing-section" class="hidden text-center bg-white p-8 rounded-xl shadow-lg">
+                 <div role="status">
+                    <svg aria-hidden="true" class="inline w-10 h-10 text-gray-200 animate-spin fill-[#3a5a40]" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
+                        <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0492C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
+                    </svg>
+                    <span class="sr-only">Loading...</span>
+                </div>
+                <p class="mt-4 text-lg font-medium">Restoring your heritage…</p>
+                <p class="text-sm text-gray-500">This may take a moment, please wait.</p>
+            </section>
+
+            <!-- Result Section -->
+            <section id="result-section" class="hidden">
+                 <div class="comparison-slider" id="comparison-slider">
+                    <div class="original-image-container">
+                        <img id="original-img" src="" alt="Original Heritage Site">
+                    </div>
+                    <div class="restored-image-container" id="restored-image-wrapper">
+                        <img id="restored-img" src="" alt="Restored Heritage Site">
+                    </div>
+                    <div class="slider-handle" id="slider-handle">
+                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+                    <a id="download-btn" href="#" download="restored_heritage.png" class="w-full sm:w-auto text-center inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-[#3a5a40] hover:bg-[#588157] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#588157]">
+                        Download Restored Photo
+                    </a>
+                    <button id="try-another-btn" type="button" class="w-full sm:w-auto text-center inline-flex justify-center items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Try Another
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Error Modal -->
+        <div id="error-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3 text-center">
+                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                        <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    </div>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mt-2">Restoration Failed</h3>
+                    <div class="mt-2 px-7 py-3">
+                        <p id="error-message" class="text-sm text-gray-500">An unexpected error occurred. Please try again with a different image.</p>
+                    </div>
+                    <div class="items-center px-4 py-3">
+                        <button id="close-modal-btn" class="px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
+            const uploadSection = document.getElementById('upload-section');
+            const uploadBox = document.getElementById('upload-box');
+            const fileInput = document.getElementById('file-input');
+            const browseBtn = document.getElementById('browse-btn');
+            const processingSection = document.getElementById('processing-section');
+            const resultSection = document.getElementById('result-section');
+            const originalImg = document.getElementById('original-img');
+            const restoredImg = document.getElementById('restored-img');
+            const downloadBtn = document.getElementById('download-btn');
+            const tryAnotherBtn = document.getElementById('try-another-btn');
+
+            const slider = document.getElementById('comparison-slider');
+            const sliderHandle = document.getElementById('slider-handle');
+            const restoredImageWrapper = document.getElementById('restored-image-wrapper');
+            
+            const errorModal = document.getElementById('error-modal');
+            const errorMessage = document.getElementById('error-message');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+
+            // --- Configuration ---
+            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent`;
+            const API_KEY = "AIzaSyD4xwKx3T0DrB19pdjfAuK8ezrf2bXkVY4";
+
+            // --- State ---
+            let isDragging = false;
+            let currentFile = null;
+
+            // --- Functions ---
+            const adjustRestoredImageWidth = () => {
+                if (originalImg && originalImg.offsetWidth > 0) {
+                    restoredImg.style.width = `${originalImg.offsetWidth}px`;
+                }
+            };
+
+            const showScreen = (screen) => {
+                uploadSection.classList.add('hidden');
+                processingSection.classList.add('hidden');
+                resultSection.classList.add('hidden');
+                screen.classList.remove('hidden');
+            };
+
+            const showError = (message) => {
+                errorMessage.textContent = message || 'An unexpected error occurred. Please try again with a different image.';
+                errorModal.classList.remove('hidden');
+            };
+
+            const hideError = () => {
+                errorModal.classList.add('hidden');
+            };
+
+            const resetUI = () => {
+                showScreen(uploadSection);
+                fileInput.value = ''; // Reset file input
+                currentFile = null;
+            };
+
+            const handleFile = (file) => {
+                if (!file || !file.type.startsWith('image/')) {
+                    showError('Please upload a valid image file (JPEG, PNG, etc.).');
+                    return;
+                }
+                currentFile = file;
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const base64Data = reader.result.split(',')[1];
+                    callRestorationAPI(base64Data);
+                };
+                reader.onerror = () => {
+                     showError('Could not read the selected file.');
+                }
+                reader.readAsDataURL(file);
+                showScreen(processingSection);
+            };
+            
+            const callRestorationAPI = async (base64ImageData, retryCount = 0) => {
+                const maxRetries = 3;
+                const prompt = `
+                    You are a master digital architect specializing in historical reconstruction. Your task is to take this image of a ruined or aged heritage site and restore it to its exact original, pristine condition. This is not just about color correction; your primary goal is large-scale structural reconstruction.
+
+                    **Crucial Instructions:**
+                    1.  **Rebuild Everything:** Reconstruct all broken, crumbling, or missing parts. This includes collapsed walls, missing roofs, broken pillars, destroyed statues, and incomplete archways.
+                    2.  **Repair Surfaces:** Meticulously repair all cracks, chips, and weathering on the surfaces. Remove all stains, pollution, and biological growth (like moss or vines).
+                    3.  **Vibrant, Original Colors:** Recolor the entire structure to look as it did when it was brand new. The colors should be vibrant and authentic.
+                    4.  **Photorealistic Output:** The final image must be a photorealistic depiction, not an artistic interpretation or drawing. It should look like a real photograph of the perfectly preserved site.
+                    5.  **Focus on Architecture:** Do not add people, animals, or modern objects. The focus is exclusively on the restored heritage structure.
+
+                    Analyze the input image carefully and rebuild it to its former glory.
+                `;
+
+                const payload = {
+                    contents: [{
+                        parts: [
+                            { text: prompt },
+                            { inlineData: { mimeType: currentFile.type, data: base64ImageData } }
+                        ]
+                    }],
+                    generationConfig: {
+                       responseModalities: ['TEXT', 'IMAGE']
+                    },
+                };
+
+                try {
+                    const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (!response.ok) {
+                        if (response.status === 429 && retryCount < maxRetries) {
+                            const delay = Math.pow(2, retryCount) * 1000;
+                            console.warn(`Rate limited. Retrying in ${delay}ms...`);
+                            setTimeout(() => callRestorationAPI(base64ImageData, retryCount + 1), delay);
+                            return;
+                        }
+                        const errorBody = await response.text();
+                        console.error("API Error Body:", errorBody);
+                        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    const result = await response.json();
+                    console.log("Full API Response:", result); // For debugging
+
+                    if (!result.candidates || result.candidates.length === 0) {
+                        if (result.promptFeedback) {
+                             console.error("Prompt Feedback:", result.promptFeedback);
+                             const blockReason = result.promptFeedback?.blockReason;
+                             if(blockReason) {
+                                throw new Error(`Request was blocked. Reason: ${blockReason}`);
+                             }
+                        }
+                        throw new Error("Invalid API response: No candidates found.");
+                    }
+
+                    const restoredBase64 = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+
+                    if (!restoredBase64) {
+                        const textPart = result?.candidates?.[0]?.content?.parts?.find(p => p.text)?.text;
+                        if (textPart) {
+                            console.error("API returned text instead of an image:", textPart);
+                            throw new Error(`Model returned a text response: "${textPart}"`);
+                        }
+                        throw new Error("No restored image data found in the API response. The model may have failed to generate an image for this input.");
+                    }
+                    displayResults(restoredBase64);
+
+                } catch (error) {
+                    console.error('Error during restoration:', error);
+                    showError(error.message);
+                    resetUI();
+                }
+            };
+            
+            const displayResults = (restoredBase64) => {
+                const originalUrl = URL.createObjectURL(currentFile);
+                const restoredUrl = `data:image/png;base64,${restoredBase64}`;
+
+                originalImg.onload = adjustRestoredImageWidth;
+
+                originalImg.src = originalUrl;
+                restoredImg.src = restoredUrl;
+                downloadBtn.href = restoredUrl;
+                
+                showScreen(resultSection);
+            };
+
+            // --- Event Listeners ---
+            browseBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+            tryAnotherBtn.addEventListener('click', resetUI);
+            closeModalBtn.addEventListener('click', hideError);
+
+            // Drag and Drop
+            uploadBox.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadBox.classList.add('dragover');
+            });
+            uploadBox.addEventListener('dragleave', () => {
+                uploadBox.classList.remove('dragover');
+            });
+            uploadBox.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadBox.classList.remove('dragover');
+                handleFile(e.dataTransfer.files[0]);
+            });
+
+            window.addEventListener('resize', adjustRestoredImageWidth);
+
+            // Slider Logic
+            const moveSlider = (clientX) => {
+                if (!isDragging) return;
+                const sliderRect = slider.getBoundingClientRect();
+                let offsetX = clientX - sliderRect.left;
+
+                if (offsetX < 0) offsetX = 0;
+                if (offsetX > sliderRect.width) offsetX = sliderRect.width;
+
+                const percentage = (offsetX / sliderRect.width) * 100;
+                sliderHandle.style.left = `${percentage}%`;
+                restoredImageWrapper.style.width = `${percentage}%`;
+            };
+
+            sliderHandle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                isDragging = true;
+            });
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+            document.addEventListener('mousemove', (e) => {
+                moveSlider(e.clientX);
+            });
+            
+            sliderHandle.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                isDragging = true;
+            });
+            document.addEventListener('touchend', () => {
+                isDragging = false;
+            });
+            document.addEventListener('touchmove', (e) => {
+                moveSlider(e.touches[0].clientX);
+            });
+        });
+    </script>
+</body>
+</html>
+
